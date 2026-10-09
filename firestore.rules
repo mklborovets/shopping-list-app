@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    match /users/{userId} {
+      // Any authenticated user can read (needed to find by email for sharing)
+      allow read: if isAuthenticated();
+      // Only the user themselves can create/update their document
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /lists/{listId} {
+      
+      function isOwner(resourceData) {
+        return isAuthenticated() && request.auth.uid == resourceData.ownerId;
+      }
+      
+      function isParticipant(resourceData) {
+        return isAuthenticated() && (request.auth.uid in resourceData.sharedWith);
+      }
+      
+      function isValidList(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+            && data.ownerId == request.auth.uid
+            && data.sharedWith is list;
+      }
+
+      // Read: owner or participant
+      allow read: if isOwner(resource.data) || isParticipant(resource.data);
+      
+      // Create: must be valid and owner must be self
+      allow create: if isValidList(request.resource.data);
+      
+      // Update: only owner can update list properties (name, sharedWith)
+      allow update: if isOwner(resource.data) && (request.resource.data.ownerId == resource.data.ownerId);
+      
+      // Delete: only owner
+      allow delete: if isOwner(resource.data);
+
+      match /items/{itemId} {
+        
+        function canAccessList() {
+          let listData = get(/databases/$(database)/documents/lists/$(listId)).data;
+          return isOwner(listData) || isParticipant(listData);
+        }
+        
+        function isValidItem(data) {
+          return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+              && data.isBought is bool
+              && (data.quantity is string || data.quantity == null);
+        }
+
+        // Owner or participant of the parent list can do full CRUD on items
+        allow read: if canAccessList();
+        allow create: if canAccessList() && isValidItem(request.resource.data);
+        allow update: if canAccessList() && isValidItem(request.resource.data);
+        allow delete: if canAccessList();
+      }
+    }
+  }
+}
