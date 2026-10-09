@@ -87,76 +87,98 @@ export default function ListDetailScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: list.name,
-          headerRight: () => isOwner ? (
-            <Button title="Share" onPress={() => setShareModalVisible(true)} />
-          ) : undefined
-        }} 
-      />
+      <View style={styles.innerContainer}>
+        <Stack.Screen 
+          options={{ 
+            title: list.name,
+            headerRight: () => isOwner ? (
+              <TouchableOpacity onPress={() => setShareModalVisible(true)} style={{ marginRight: Platform.OS === 'web' ? 15 : 0 }}>
+                <Text style={{ color: '#007aff', fontSize: 16, fontWeight: '500' }}>Share</Text>
+              </TouchableOpacity>
+            ) : undefined
+          }} 
+        />
 
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>{progressText}</Text>
-      </View>
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>{progressText}</Text>
+        </View>
 
-      <View style={styles.addSection}>
-        <TextInput style={[styles.input, { flex: 2 }]} placeholder="Item name..." value={newItemName} onChangeText={setNewItemName} />
-        <TextInput style={[styles.input, { flex: 1, marginLeft: 10 }]} placeholder="Qty (opt)" value={newItemQuantity} onChangeText={setNewItemQuantity} />
-        <View style={{ marginLeft: 10 }}><Button title="Add" onPress={handleAddItem} /></View>
-      </View>
+        <View style={styles.addSection}>
+          <TextInput style={[styles.input, { flex: 2 }]} placeholder="Item name" placeholderTextColor="#999" value={newItemName} onChangeText={setNewItemName} />
+          <TextInput style={[styles.input, { flex: 1, marginLeft: 10 }]} placeholder="Qty" placeholderTextColor="#999" value={newItemQuantity} onChangeText={setNewItemQuantity} />
+          <TouchableOpacity style={[styles.addBtn, { marginLeft: 10 }]} onPress={handleAddItem}>
+            <Text style={styles.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        </View>
 
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.itemRow, item.isBought && styles.itemBought]}>
-            <TouchableOpacity style={styles.itemTextContainer} onPress={() => toggleItemStatus(listId, item.id, item.isBought)}>
-              <Text style={[styles.itemName, item.isBought && styles.textStrike]}>{item.isBought ? '✅ ' : '⬜ '}{item.name}</Text>
-              {!!item.quantity && <Text style={styles.itemQty}>Qty: {item.quantity}</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => deleteItem(listId, item.id)}>
-              <Text style={styles.deleteBtn}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 20, paddingTop: 10 }}
+          renderItem={({ item }) => (
+            <View style={[styles.itemRow, item.isBought && styles.itemBought]}>
+              <TouchableOpacity style={styles.itemTextContainer} onPress={() => toggleItemStatus(listId, item.id, item.isBought)}>
+                <Text style={[styles.itemName, item.isBought && styles.textStrike]}>
+                  {item.isBought ? '✅ ' : '⬜ '} {item.name}
+                </Text>
+                {!!item.quantity && <Text style={styles.itemQty}>{item.quantity}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteBtnContainer} onPress={() => deleteItem(listId, item.id)}>
+                <Text style={styles.deleteBtn}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
 
-      <Modal visible={shareModalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Share List</Text>
-            <Text style={styles.modalSub}>Enter the email of a registered user.</Text>
-            <TextInput style={styles.modalInput} placeholder="User Email" value={shareEmail} onChangeText={setShareEmail} keyboardType="email-address" autoCapitalize="none" />
-            <View style={styles.modalButtons}>
-              <Button title="Cancel" color="red" onPress={() => setShareModalVisible(false)} />
-              <Button title={sharing ? "Sharing..." : "Share"} onPress={handleShare} disabled={sharing} />
+        <Modal visible={shareModalVisible} animationType="fade" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Share List</Text>
+              <Text style={styles.modalSub}>Enter the email of a registered user.</Text>
+              <TextInput style={styles.modalInput} placeholder="User email" placeholderTextColor="#999" value={shareEmail} onChangeText={setShareEmail} keyboardType="email-address" autoCapitalize="none" />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShareModalVisible(false)}>
+                  <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnShare, sharing && { opacity: 0.6 }]} onPress={handleShare} disabled={sharing}>
+                  <Text style={styles.modalBtnShareText}>{sharing ? "Sharing..." : "Share"}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9f9f9' },
+  container: { flex: 1, backgroundColor: '#f2f2f7' },
+  innerContainer: { flex: 1, width: '100%', maxWidth: 700, alignSelf: 'center', backgroundColor: '#f2f2f7' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  progressContainer: { padding: 10, backgroundColor: '#e6f2ff', alignItems: 'center' },
-  progressText: { fontWeight: 'bold', color: '#0055cc' },
-  addSection: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee', alignItems: 'center' },
-  input: { height: 40, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10, color: '#000' },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' },
-  itemBought: { backgroundColor: '#f0f0f0' },
-  itemTextContainer: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  itemName: { fontSize: 16, color: '#000' },
-  textStrike: { textDecorationLine: 'line-through', color: '#888' },
-  itemQty: { marginLeft: 10, fontSize: 14, color: '#666', backgroundColor: '#e0e0e0', paddingHorizontal: 6, borderRadius: 4 },
-  deleteBtn: { fontSize: 18, color: 'red', padding: 5 },
-  modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 10 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: '#000' },
-  modalSub: { marginBottom: 15, color: '#666' },
-  modalInput: { height: 40, borderWidth: 1, borderColor: '#ccc', marginBottom: 20, paddingHorizontal: 10, borderRadius: 5, color: '#000' },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-around' }
+  progressContainer: { padding: 15, backgroundColor: '#e5f0ff', alignItems: 'center', borderBottomWidth: 1, borderColor: '#cce0ff' },
+  progressText: { fontWeight: '700', color: '#0055cc', fontSize: 15 },
+  addSection: { flexDirection: 'row', padding: 20, backgroundColor: '#fff', marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2, alignItems: 'center' },
+  input: { height: 44, backgroundColor: '#f2f2f7', borderWidth: 0, borderRadius: 10, paddingHorizontal: 15, color: '#1c1c1e', fontSize: 16 },
+  addBtn: { backgroundColor: '#007aff', paddingHorizontal: 20, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  addBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 20, marginBottom: 12, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  itemBought: { backgroundColor: '#f9f9f9', opacity: 0.6 },
+  itemTextContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 16 },
+  itemName: { fontSize: 17, color: '#1c1c1e', fontWeight: '500' },
+  textStrike: { textDecorationLine: 'line-through', color: '#8e8e93' },
+  itemQty: { marginLeft: 12, fontSize: 13, color: '#666', backgroundColor: '#e5e5ea', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
+  deleteBtnContainer: { padding: 16 },
+  deleteBtn: { fontSize: 22, color: '#ff3b30', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.4)', padding: 20 },
+  modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16, width: '100%', maxWidth: 350, alignSelf: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
+  modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8, color: '#1c1c1e', textAlign: 'center' },
+  modalSub: { marginBottom: 24, color: '#8e8e93', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  modalInput: { height: 46, backgroundColor: '#f2f2f7', borderWidth: 0, marginBottom: 24, paddingHorizontal: 15, borderRadius: 10, color: '#1c1c1e', fontSize: 16 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  modalBtn: { flex: 1, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  modalBtnCancel: { backgroundColor: '#f2f2f7' },
+  modalBtnShare: { backgroundColor: '#007aff' },
+  modalBtnCancelText: { color: '#1c1c1e', fontWeight: '600', fontSize: 15 },
+  modalBtnShareText: { color: '#fff', fontWeight: '600', fontSize: 15 }
 });

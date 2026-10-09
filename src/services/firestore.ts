@@ -6,6 +6,11 @@ import {
   doc, 
   updateDoc, 
   serverTimestamp,
+  query,
+  where,
+  getDocs,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 
 export interface ShoppingList {
@@ -62,8 +67,6 @@ export const toggleItemStatus = async (listId: string, itemId: string, currentSt
 export const deleteItem = async (listId: string, itemId: string) => {
   await deleteDoc(doc(db, `lists/${listId}/items`, itemId));
 };
-
-import { query, where, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 export const shareListWithEmail = async (listId: string, email: string) => {
   const usersRef = collection(db, 'users');

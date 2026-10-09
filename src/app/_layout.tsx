@@ -18,7 +18,7 @@ const RootLayoutNav = () => {
     } else if (user && inAuthGroup) {
       router.replace('/(main)');
     }
-  }, [user, isLoading, segments]);
+  }, [user, isLoading, segments, router]);
 
   if (isLoading) {
     return (

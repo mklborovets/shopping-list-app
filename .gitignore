@@ -45,3 +45,4 @@ example
 # Planning docs
 TZ-rn-shopping-list.md
 project_plan.md
+*.log
