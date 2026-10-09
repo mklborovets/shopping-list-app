@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, Button, StyleSheet, Alert, TouchableOp
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../services/firebase';
 import { collection, query, or, where, onSnapshot } from 'firebase/firestore';
-import { createList, deleteList, ShoppingList } from '../../services/firestore';
+import { createList, deleteList, renameList, ShoppingList } from '../../services/firestore';
 import { useRouter } from 'expo-router';
 import { logoutUser } from '../../services/auth';
 
@@ -16,6 +16,10 @@ export default function ListsScreen() {
 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [listToDelete, setListToDelete] = useState<string | null>(null);
+
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [listToRename, setListToRename] = useState<string | null>(null);
+  const [newRenameValue, setNewRenameValue] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -77,6 +81,17 @@ export default function ListsScreen() {
     }
   };
 
+  const confirmRename = async () => {
+    if (!listToRename || !newRenameValue.trim()) return;
+    try {
+      await renameList(listToRename, newRenameValue.trim());
+      setRenameModalVisible(false);
+      setListToRename(null);
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    }
+  };
+
   if (loading) {
     return <View style={styles.center}><Text>Loading lists...</Text></View>;
   }
@@ -120,9 +135,14 @@ export default function ListsScreen() {
                   </View>
                 </TouchableOpacity>
                 {item.ownerId === user?.uid && (
-                  <TouchableOpacity style={{ justifyContent: 'center', paddingLeft: 15 }} onPress={() => handleDelete(item.id, item.ownerId)}>
-                    <Text style={styles.deleteBtn}>Delete</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity style={{ justifyContent: 'center', paddingLeft: 15 }} onPress={() => { setListToRename(item.id); setNewRenameValue(item.name); setRenameModalVisible(true); }}>
+                      <Text style={[styles.deleteBtn, { color: '#007aff' }]}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ justifyContent: 'center', paddingLeft: 15 }} onPress={() => handleDelete(item.id, item.ownerId)}>
+                      <Text style={styles.deleteBtn}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
             )}
@@ -140,6 +160,23 @@ export default function ListsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnDelete]} onPress={confirmDelete}>
                   <Text style={styles.modalBtnDeleteText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={renameModalVisible} animationType="fade" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Rename List</Text>
+              <TextInput style={styles.modalInput} value={newRenameValue} onChangeText={setNewRenameValue} placeholder="New name" placeholderTextColor="#999" />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => { setRenameModalVisible(false); setListToRename(null); }}>
+                  <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#007aff' }]} onPress={confirmRename}>
+                  <Text style={styles.modalBtnDeleteText}>Rename</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -169,6 +206,7 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16, width: '100%', maxWidth: 350, alignSelf: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 },
   modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8, color: '#1c1c1e', textAlign: 'center' },
   modalSub: { marginBottom: 24, color: '#8e8e93', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  modalInput: { height: 46, backgroundColor: '#f2f2f7', borderWidth: 0, marginBottom: 24, paddingHorizontal: 15, borderRadius: 10, color: '#1c1c1e', fontSize: 16 },
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   modalBtn: { flex: 1, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   modalBtnCancel: { backgroundColor: '#f2f2f7' },

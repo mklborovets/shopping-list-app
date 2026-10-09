@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, Button, StyleSheet, Alert, TouchableOpacity, KeyboardAvoidingView, Platform, Modal } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
 import { db } from '../../../services/firebase';
 import { collection, query, onSnapshot, doc, orderBy } from 'firebase/firestore';
-import { addItemToList, toggleItemStatus, deleteItem, shareListWithEmail, ShoppingList, ListItem } from '../../../services/firestore';
+import { addItemToList, toggleItemStatus, deleteItem, shareListWithEmail, removeParticipant, getParticipants, ShoppingList, ListItem } from '../../../services/firestore';
+import { calculateProgress, sortItems } from '../../../utils/listUtils';
 
 export default function ListDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -21,34 +22,50 @@ export default function ListDetailScreen() {
   const [shareModalVisible, setShareModalVisible] = useState(false);
   const [shareEmail, setShareEmail] = useState('');
   const [sharing, setSharing] = useState(false);
+  const [participants, setParticipants] = useState<{uid: string, email: string}[]>([]);
+
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubList = onSnapshot(doc(db, 'lists', listId), (docSnap) => {
-      if (docSnap.exists()) {
-        setList({ id: docSnap.id, ...docSnap.data() } as ShoppingList);
-      } else {
-        Alert.alert('Error', 'List deleted or unavailable');
+    const unsubList = onSnapshot(doc(db, 'lists', listId), 
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setList({ id: docSnap.id, ...docSnap.data() } as ShoppingList);
+        } else {
+          Alert.alert('Notice', 'This list was deleted.');
+          router.replace('/(main)');
+        }
+      },
+      (error) => {
+        Alert.alert('Access Revoked', 'You no longer have access to this list.');
+        router.replace('/(main)');
       }
-    });
+    );
 
     const q = query(collection(db, `lists/${listId}/items`), orderBy('createdAt', 'desc'));
-    const unsubItems = onSnapshot(q, (snapshot) => {
-      const fetchedItems = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ListItem[];
-      
-      fetchedItems.sort((a, b) => {
-        if (a.isBought === b.isBought) return 0;
-        return a.isBought ? 1 : -1;
-      });
-      
-      setItems(fetchedItems);
-      setLoading(false);
-    });
+    const unsubItems = onSnapshot(q, 
+      (snapshot) => {
+        const fetchedItems = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as ListItem[];
+        
+        setItems(sortItems(fetchedItems));
+        setLoading(false);
+      },
+      (error) => {
+        console.log('Items listener error:', error.message);
+      }
+    );
 
     return () => { unsubList(); unsubItems(); };
   }, [listId]);
+
+  useEffect(() => {
+    if (list?.sharedWith) {
+      getParticipants(list.sharedWith).then(setParticipants).catch(console.error);
+    }
+  }, [list?.sharedWith]);
 
   const handleAddItem = async () => {
     if (!newItemName.trim()) return;
@@ -81,9 +98,7 @@ export default function ListDetailScreen() {
   }
 
   const isOwner = list.ownerId === user?.uid;
-  const boughtCount = items.filter(i => i.isBought).length;
-  const totalCount = items.length;
-  const progressText = totalCount > 0 ? `${boughtCount}/${totalCount} bought` : 'Empty list';
+  const progressText = calculateProgress(items);
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
@@ -133,12 +148,31 @@ export default function ListDetailScreen() {
         <Modal visible={shareModalVisible} animationType="fade" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Share List</Text>
-              <Text style={styles.modalSub}>Enter the email of a registered user.</Text>
+              <Text style={styles.modalTitle}>Manage Access</Text>
+              <Text style={styles.modalSub}>Enter the email of a registered user to share.</Text>
               <TextInput style={styles.modalInput} placeholder="User email" placeholderTextColor="#999" value={shareEmail} onChangeText={setShareEmail} keyboardType="email-address" autoCapitalize="none" />
+              
+              {participants.length > 0 && (
+                <View style={{ marginBottom: 20, maxHeight: 150, overflow: 'hidden' }}>
+                  <Text style={{ fontWeight: '600', marginBottom: 10, color: '#1c1c1e' }}>Participants:</Text>
+                  <FlatList
+                    data={participants}
+                    keyExtractor={p => p.uid}
+                    renderItem={({item: p}) => (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: 10, backgroundColor: '#f2f2f7', borderRadius: 8 }}>
+                        <Text style={{ color: '#1c1c1e' }}>{p.email}</Text>
+                        <TouchableOpacity onPress={() => removeParticipant(listId, p.uid)}>
+                          <Text style={{ color: '#ff3b30', fontWeight: 'bold' }}>Remove</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  />
+                </View>
+              )}
+
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShareModalVisible(false)}>
-                  <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                  <Text style={styles.modalBtnCancelText}>Done</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.modalBtn, styles.modalBtnShare, sharing && { opacity: 0.6 }]} onPress={handleShare} disabled={sharing}>
                   <Text style={styles.modalBtnShareText}>{sharing ? "Sharing..." : "Share"}</Text>

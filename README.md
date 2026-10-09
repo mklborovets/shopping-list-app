@@ -49,3 +49,19 @@ This command automatically starts the Firestore emulator, runs the Jest test sui
 - **Users**: Users can only modify their own profile data. Any authenticated user can read profiles (needed to search by email when sharing).
 - **Lists**: The list `ownerId` has full control. Users added to the `sharedWith` array can read the list and fully interact with its items.
 - **Items**: Inherits permissions from the parent list. Only list owners and participants can view or modify items.
+
+## Connecting to Emulators on Different Devices
+
+Connection behavior to emulators depends on your device:
+- **Web / iOS Simulator**: Automatically connects to `localhost`.
+- **Android Emulator**: Automatically connects to `10.0.2.2` (the standard alias to host loopback).
+- **Physical Device (via Expo Go)**: You must specify your computer's local network IP address in the `.env` file because `localhost` points to the phone itself. 
+  Uncomment and set: `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST=192.168.1.100`
+
+## Production Readiness (What I would change for Prod)
+
+If deploying to production, I would:
+1. **Environment Variables**: Change `EXPO_PUBLIC_USE_FIREBASE_EMULATOR=false` to use real production Firebase instances.
+2. **Real Firebase Config**: Replace the `demo-api-key` in `firebase.ts` with actual credentials for the production Firebase project.
+3. **EAS Build**: Setup Expo Application Services (EAS) to compile standalone `.apk` and `.ipa` files instead of relying on Expo Go.
+4. **Pagination**: Implement pagination in Firestore queries for the items list to optimize read costs when lists get very large.

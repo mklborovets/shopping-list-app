@@ -10,7 +10,8 @@ import {
   where,
   getDocs,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  documentId
 } from 'firebase/firestore';
 
 export interface ShoppingList {
@@ -87,4 +88,19 @@ export const removeParticipant = async (listId: string, uid: string) => {
   await updateDoc(doc(db, 'lists', listId), {
     sharedWith: arrayRemove(uid)
   });
+};
+
+export const getParticipants = async (sharedWith: string[]) => {
+  if (!sharedWith || sharedWith.length === 0) return [];
+  const chunks = [];
+  for (let i = 0; i < sharedWith.length; i += 10) {
+     chunks.push(sharedWith.slice(i, i + 10));
+  }
+  const results: {uid: string, email: string}[] = [];
+  for (const chunk of chunks) {
+    const q = query(collection(db, 'users'), where(documentId(), 'in', chunk));
+    const snap = await getDocs(q);
+    results.push(...snap.docs.map(d => ({ uid: d.id, email: d.data().email })));
+  }
+  return results;
 };

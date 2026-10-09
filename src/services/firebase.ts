@@ -17,16 +17,18 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-if (__DEV__) {
-  let host = 'localhost';
+if (process.env.EXPO_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
+  let host = process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST || 'localhost';
   
-  if (Platform.OS === 'android') {
-    host = '10.0.2.2';
-  }
-  
-  const debuggerHost = Constants.expoConfig?.hostUri;
-  if (debuggerHost) {
-    host = debuggerHost.split(':')[0];
+  if (!process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST) {
+    if (Platform.OS === 'android') {
+      host = '10.0.2.2';
+    }
+    
+    const debuggerHost = Constants.expoConfig?.hostUri;
+    if (debuggerHost) {
+      host = debuggerHost.split(':')[0];
+    }
   }
 
   connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
