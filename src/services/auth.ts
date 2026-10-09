@@ -4,12 +4,21 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 
 export const registerUser = async (email: string, password: string): Promise<User> => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const user = userCredential.user;
+    
+    // Create user document in Firestore for sharing
+    await setDoc(doc(db, 'users', user.uid), {
+      email: user.email,
+      createdAt: new Date().toISOString(),
+    });
+
+    return user;
   } catch (error: any) {
     throw new Error(error.message || 'An error occurred during registration.');
   }
