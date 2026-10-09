@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' },
   email: { fontSize: 16, color: '#666' },
   createSection: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', marginBottom: 10 },
-  input: { flex: 1, height: 40, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10, marginRight: 10 },
+  input: { flex: 1, height: 40, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 10, marginRight: 10, color: '#000' },
   listItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, backgroundColor: '#fff', marginHorizontal: 15, marginBottom: 10, borderRadius: 8 },
   listTitle: { fontSize: 18, fontWeight: '500' },
   listRole: { fontSize: 12, color: '#888', marginTop: 4 },
