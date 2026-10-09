@@ -52,7 +52,7 @@ service cloud.firestore {
         function isValidItem(data) {
           return data.name is string && data.name.size() > 0 && data.name.size() <= 100
               && data.isBought is bool
-              && (data.quantity is string || data.quantity == null);
+              && (!('quantity' in data) || data.quantity is string);
         }
 
         // Owner or participant of the parent list can do full CRUD on items
