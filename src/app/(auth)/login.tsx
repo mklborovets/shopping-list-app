@@ -20,9 +20,10 @@ export default function LoginScreen() {
       await loginUser(email, password);
     } catch (err: any) {
       let msg = 'Login failed. Please try again.';
-      if (err.code === 'auth/invalid-email') msg = 'Invalid email format.';
-      else if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') msg = 'Incorrect email or password.';
-      else if (err.code === 'auth/too-many-requests') msg = 'Too many attempts. Try again later.';
+      const errMsg = err.message || '';
+      if (errMsg.includes('auth/invalid-email')) msg = 'Invalid email format.';
+      else if (errMsg.includes('auth/user-not-found') || errMsg.includes('auth/invalid-credential') || errMsg.includes('auth/wrong-password')) msg = 'Incorrect email or password.';
+      else if (errMsg.includes('auth/too-many-requests')) msg = 'Too many attempts. Try again later.';
       else if (err.message) msg = err.message;
       setError(msg);
     } finally {

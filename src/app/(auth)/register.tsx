@@ -20,9 +20,10 @@ export default function RegisterScreen() {
       await registerUser(email, password);
     } catch (err: any) {
       let msg = 'Registration failed.';
-      if (err.code === 'auth/invalid-email') msg = 'Invalid email format.';
-      else if (err.code === 'auth/email-already-in-use') msg = 'Email is already in use.';
-      else if (err.code === 'auth/weak-password') msg = 'Password should be at least 6 characters.';
+      const errMsg = err.message || '';
+      if (errMsg.includes('auth/invalid-email')) msg = 'Invalid email format.';
+      else if (errMsg.includes('auth/email-already-in-use')) msg = 'Email is already in use.';
+      else if (errMsg.includes('auth/weak-password')) msg = 'Password should be at least 6 characters.';
       else if (err.message) msg = err.message;
       setError(msg);
     } finally {
